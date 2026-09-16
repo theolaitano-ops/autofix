@@ -155,3 +155,70 @@ INNER JOIN medicos m ON e.id = m.especialidade_id
 LEFT JOIN consultas c ON m.id = c.medico_id AND c.status = 'Realizada'
 GROUP BY e.id, e.nome
 ORDER BY faturamento_consultas DESC;
+
+--views
+
+create view vw_consulta as 
+
+SELECT 
+    m.nome AS medico,
+    m.crm,
+    e.nome AS especialidade,
+    m.valor_consulta
+FROM medicos m
+INNER JOIN especialidades e ON m.especialidade_id = e.id
+ORDER BY m.valor_consulta DESC;
+
+create view vw_consulta_real as 
+
+SELECT 
+    c.id AS consulta_id,
+    c.data_hora,
+    m.nome AS medico,
+    e.nome AS especialidade,
+    c.status
+FROM consultas c
+INNER JOIN pacientes p ON c.paciente_id = p.id
+INNER JOIN medicos m ON c.medico_id = m.id
+INNER JOIN especialidades e ON m.especialidade_id = e.id
+WHERE p.nome = 'Carlos Silva'
+ORDER BY c.data_hora ASC;
+
+create view vw_valor_c as 
+
+SELECT 
+    c.id AS consulta_id,
+    p.nome AS paciente,
+    m.nome AS medico,
+    m.valor_consulta,
+    COALESCE(SUM(ex.valor_exame), 0.00) AS total_exames,
+    (m.valor_consulta + COALESCE(SUM(ex.valor_exame), 0.00)) AS valor_total_atendimento
+FROM consultas c
+INNER JOIN pacientes p ON c.paciente_id = p.id
+INNER JOIN medicos m ON c.medico_id = m.id
+LEFT JOIN exames_consulta ex ON c.id = ex.consulta_id
+GROUP BY c.id, p.nome, m.nome, m.valor_consulta
+ORDER BY c.id;
+
+create view vw_valor_final as 
+
+SELECT 
+    m.nome AS medico,
+    m.crm,
+    e.nome AS especialidade,
+    m.valor_consulta
+FROM medicos m
+INNER JOIN especialidades e ON m.especialidade_id = e.id
+WHERE m.valor_consulta > 300.00;
+
+create view vw_consultas_real_real as 
+
+SELECT 
+    e.nome AS especialidade,
+    COUNT(c.id) AS quantidade_consultas,
+    COALESCE(SUM(m.valor_consulta), 0.00) AS faturamento_consultas
+FROM especialidades e
+INNER JOIN medicos m ON e.id = m.especialidade_id
+LEFT JOIN consultas c ON m.id = c.medico_id AND c.status = 'Realizada'
+GROUP BY e.id, e.nome
+ORDER BY faturamento_consultas DESC;
